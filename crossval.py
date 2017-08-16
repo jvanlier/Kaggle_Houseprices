@@ -1,10 +1,10 @@
 """Cross-validation wrappers and utilities for Kaggle House Price competition."""
-
 from datetime import datetime
 
 import numpy as np
 from sklearn.model_selection import KFold
 from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RepeatedKFold
 
 from utils import rmsle, rmsle_sk
 
@@ -16,39 +16,52 @@ def calc_kfold_score_helper(model, kf, df, y):
     :param model: an instance of sklearn-model
     :param kf: an instance of sklearn KFold
     :param df: the dataframe with training data 
-    :param y: the labels
+    :param y: dependent value
     :returns a generator that yields RMSLE scores for each split.
     """
-    for kf_train, kf_cv in kf.split(df):
-        df_train_fold = df.ix[kf_train + 1]
-        y_train_fold = y.ix[kf_train + 1]
 
-        df_cv_fold = df.ix[kf_cv + 1]
-        y_cv_fold = y.ix[kf_cv + 1]
+    def assert_not_null(df):
+        for c in df.columns:
+            num_null = len(df[df[c].isnull()])
+            if num_null > 0:
+                raise AssertionError("Column {} has {} null values".format(c, num_null))
+    assert_not_null(df)
 
-        model.fit(df_train_fold, y_train_fold)
+    for train_index, test_index in kf.split(df):
+        df_train = df.ix[train_index + 1]
+        y_train = y.ix[train_index + 1]
 
-        yield rmsle(y_cv_fold, model.predict(df_cv_fold))
+        assert_not_null(df_train)
+
+        df_cv = df.ix[test_index + 1]
+        y_cv = y.ix[test_index + 1]
+
+        assert_not_null(df_cv)
+
+        model.fit(df_train, y_train)
+
+        yield rmsle(y_cv, model.predict(df_cv))
 
 
-def calc_kfold_score(model, df, y, n_splits=3):
+def calc_kfold_score(model, df, y, n_splits=3, shuffle=True):
     """
     Calculate crossvalidation score for the given model and data. Uses sklearn's KFold with shuffle=True.
     
     :param model: an instance of sklearn-model 
-    :param df: 
-    :param y: 
-    :param n_splits: 
-    :return: 
+    :param df: the dataframe with training data
+    :param y: dependent value
+    :param n_splits: the amount of splits (i.e. K in K-fold)
+    :param shuffle: whether to shuffle or not
+    :return: mean, std
     """
-    kf = KFold(n_splits=n_splits, shuffle=True)
+    kf = KFold(n_splits=n_splits, shuffle=shuffle)
     scores = list(calc_kfold_score_helper(model, kf, df, y))
     mean = np.mean(scores)
     std = np.std(scores)
     return mean, std
 
 
-def gridcv(df_train, y_train, clf, params, n_jobs=8, verbose=True):
+def gridcv(df_train, y_train, clf, params, n_jobs=1, n_folds=3, n_repeats=1, verbose=True):
     """
     Wrapper for Cross-validated Grid Search.
 
@@ -57,10 +70,13 @@ def gridcv(df_train, y_train, clf, params, n_jobs=8, verbose=True):
     :param clf: predictor
     :param params: the params
     :param n_jobs: how many threads to use
+    :param n_folds: how many folds to use
+    :param n_repeats: how often to repeat the crossvalidation
     :param verbose: to be chatty or not
     :return 3-tuple: best estimator (sklearn predictor object), best params (dict), best score (float)
     """
-    grid_cv = GridSearchCV(clf, params, n_jobs=n_jobs, scoring=rmsle_sk, )
+    cv = RepeatedKFold(n_splits=n_folds, n_repeats=n_repeats)
+    grid_cv = GridSearchCV(clf, params, n_jobs=n_jobs, scoring=rmsle_sk, cv=cv)
     grid_cv.fit(df_train, y_train)
     score = -1 * grid_cv.best_score_
 

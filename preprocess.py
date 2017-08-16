@@ -121,27 +121,29 @@ def knn_impute(df):
     :return df: dataframe with missing values imputed.
     """
     missing_cols = list(gen_missing_columns(df))
-    # I had `random.shuffle(missing_cols)` here, but it added too much nondeterminism to the result.
+    df_sub = df_without_columns(df, missing_cols)
+    df_sub_t = auto_transform(df_sub.copy())
+    nn = NearestNeighbors(n_neighbors=20)
+    nn.fit(df_sub_t)
 
     for col in missing_cols:
-        # In every iteration, we want to use the new column that was populated fully in the
-        # previous iteration. So we create a new DataFrame selection and fit the NN again.
-        df_sub = df_without_columns(df, list(gen_missing_columns(df)))
-        df_sub_t = auto_transform(df_sub.copy())
-        nn = NearestNeighbors(n_neighbors=100)
-        nn.fit(df_sub_t)  # Don't worry, this is very fast for such a small dataset.
-
         # In original df, find indices that are missing for current column. Then lookup those indices
         # and find the first value that's filled in, ordered based on neighbour distance (closest first).
         idxes_missing = df[df[col].isnull()].index.values
-        for idx_miss in idxes_missing:
-            neighbours = nn.kneighbors(df_sub_t.loc[idx_miss, :].values.reshape(1, -1), return_distance=False)
-            neighbour_values = df.loc[neighbours.flatten(), col].dropna().values
+        for idx_missing in idxes_missing:
+            neighbours = nn.kneighbors(df_sub_t.loc[idx_missing, :].values.reshape(1, -1), return_distance=False)
+            neighbour_values = df.loc[neighbours.flatten(), col].dropna()
 
             if len(neighbour_values) == 0:
                 raise ValueError("None of the neighbours have a value in {}, increase n_neighbours".format(col))
 
-            df.loc[idx_miss, col] = neighbour_values[0]
+            if df[col].dtype == 'object':
+                # Fill the most frequent value
+                new_value = neighbour_values.value_counts().index[0]
+            else:
+                new_value = neighbour_values.mean()
+
+            df.loc[idx_missing, col] = new_value
     return df
 
 
@@ -149,7 +151,7 @@ def gen_missing_columns(df, verbose=False):
     """A generator that yields the names of the columns that have at least one value missing.
 
     :param df: dataframe
-    :param verbose: chatty or not chatty
+    :param verbose: to be chatty or not
     :return a generator that yields names of columns that have missing data
     """
     for col in df.columns:

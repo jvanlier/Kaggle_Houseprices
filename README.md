@@ -5,20 +5,15 @@ This repo contains my solution to Kaggle's
 [House Prices: Advanced Regression Techniques](https://www.kaggle.com/c/house-prices-advanced-regression-techniques)
 competition. 
 
-I managed to get a top 9% score (136th / 1602) on August 11, 2017. 
-I scored 0.11579 on the public leaderboard. I'm not done yet though - I have some ideas to improve this 
-further that seem very promising.
-
-*Minor caveat*: the version in this repo is actually overfitting to the training data that 
-Kaggle provides during the manual transformation selection procedure. 
-Internal crossvalidation scores are better but leaderboard scores are worse. 
-I'm using a slightly older version to get the score I mentioned, the version currently on the repo 
-only does about 0.119 on the public leaderboard. I'll fix it soon. 
+I managed to get a top 5% score (76th / 1584) on August 16, 2017 with a score of .11459.
+I think I'll leave it at this - I've invested all the time that I wanted to (and more).
 
 I'm sharing this in the hope that it might help others. It's a pretty 
 interesting competition: even though it has been around for a couple of years, the top 500 or so 
-is dominated by people that have submitted something in the last 2 months. Competition is pretty 
+is dominated by people that have submitted something in the last 2 months. Competition is quite 
 fierce: people are constantly figuring out ways to improve their score.
+
+A short blogpost with lessons learned is coming soon!
 
 The code was written (and has only been tested) on a Mac using Anaconda Python 3.6. See `requirements.txt` for the modules used and their versions.
 

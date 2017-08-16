@@ -90,15 +90,13 @@ def sort_order_helper(df, field, aggregation_method):
     return df.groupby(field).agg({'SalePrice': aggregation_method}).sort_values('SalePrice').index.values
 
 
-def data_profile(df, field, dtype=None, show_first_missing=False):
+def data_profile(df, field, dtype=None):
     """
     Plots/prints generic information about a field.
-    Relies on global param `comb_df` being available.
 
     :param df: the dataframe
     :param field: name of field in dataframe
-    :param dtype: None to infer from data, can be set explicitly to 'numeric' or 'categorical'
-    :param show_first_missing: prints first 10 missing values
+    :param dtype: None to infer from data, can be set explicitly to 'categorical' to force violinplots for ordinal vars.
     """
     if dtype is None:
         # try to infer
@@ -108,7 +106,7 @@ def data_profile(df, field, dtype=None, show_first_missing=False):
             dtype = 'numeric'
 
     if dtype is 'numeric':
-        sns.jointplot(field, COL_Y, data=df, kind='scatter', alpha=.5)
+        sns.jointplot(field, COL_Y, data=df, kind='reg')
         plt.show()
     else:
         plt.figure(figsize=(12, 4))
@@ -129,9 +127,6 @@ def data_profile(df, field, dtype=None, show_first_missing=False):
 
     missing = df[df[field].isnull()]
     print(len(missing), " missing entries")
-
-    if show_first_missing and missing > 0:
-        print(missing.head(10))
 
 
 def hist_compare(condition, label1, label2, df):
