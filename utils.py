@@ -1,7 +1,6 @@
-"""Utilities such as scoring functions, submission generators, transformation helpers, plotting functions...
+"""Utilities such as scoring functions, submission generators, transformation helpers and plotting functions
 for Kaggle House Price competition.
 """
-
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
@@ -65,7 +64,7 @@ def sqrt_transform_helper(df, col):
 def log_transform_helper(df, col):
     """Applies a log transform on a numeric column. Values are +1'd to prevent log(0) = -inf. 
     All values must be >= 0."""
-    df.loc[:, col] = np.log(df[col] + 1)
+    df.loc[:, col] = np.log1p(df[col])
     return df
 
 
@@ -87,17 +86,22 @@ def barchart_sort_order(df, field):
 
 
 def sort_order_helper(df, field, aggregation_method):
-    return df.groupby(field).agg({'SalePrice': aggregation_method}).sort_values('SalePrice').index.values
+    return df.groupby(field).agg({COL_Y: aggregation_method}).sort_values(COL_Y).index.values
 
 
-def data_profile(df, field, dtype=None):
+def data_profile(df, field, dtype=None, logy=False):
     """
     Plots/prints generic information about a field.
 
-    :param df: the dataframe
-    :param field: name of field in dataframe
+    :param df: the DataFrame
+    :param field: name of field in DataFrame
     :param dtype: None to infer from data, can be set explicitly to 'categorical' to force violinplots for ordinal vars.
+    :param logy: if True, will copy the DataFrame and apply log transformation on df[COL_Y].
     """
+    if logy:
+        df = df.copy()
+        df[COL_Y] = np.log(df[COL_Y])
+
     if dtype is None:
         # try to infer
         if df[field].dtype == 'O':
@@ -108,19 +112,23 @@ def data_profile(df, field, dtype=None):
     if dtype is 'numeric':
         sns.jointplot(field, COL_Y, data=df, kind='reg')
         plt.show()
+
     else:
         plt.figure(figsize=(12, 4))
-        sns.violinplot(x=field, y=COL_Y, data=df,
-                       order=boxplot_sort_order(df, field))
+        vp = sns.violinplot(x=field, y=COL_Y, data=df, order=boxplot_sort_order(df, field))
+        vp.set_xticklabels(vp.get_xticklabels(), rotation=30)
 
         sale_price_medians = df[[field, COL_Y]].groupby(field)[COL_Y].median()
-        plt.ylim(sale_price_medians.min() - 50000, sale_price_medians.max() + 50000)
+        if not logy:
+            plt.ylim(sale_price_medians.min() - 50000, sale_price_medians.max() + 50000)
 
         plt.show()
         plt.figure(figsize=(12, 4))
-        sns.barplot(x='index', y=field,
-                    data=pd.DataFrame(df[field].value_counts().reset_index()),
-                    order=boxplot_sort_order(df, field))
+        bp = sns.barplot(x='index', y=field,
+                         data=pd.DataFrame(df[field].value_counts().reset_index()),
+                         order=boxplot_sort_order(df, field))
+        bp.set_xticklabels(bp.get_xticklabels(), rotation=30)
+
         plt.xlabel(field)
         plt.ylabel('Count')
         plt.show()
