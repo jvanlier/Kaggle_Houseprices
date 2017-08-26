@@ -20,23 +20,12 @@ def calc_kfold_score_helper(model, kf, df, y):
     :returns a generator that yields RMSLE scores for each split.
     """
 
-    def assert_not_null(df):
-        for c in df.columns:
-            num_null = len(df[df[c].isnull()])
-            if num_null > 0:
-                raise AssertionError("Column {} has {} null values".format(c, num_null))
-    assert_not_null(df)
-
     for train_index, test_index in kf.split(df):
         df_train = df.ix[train_index + 1]
         y_train = y.ix[train_index + 1]
 
-        assert_not_null(df_train)
-
         df_cv = df.ix[test_index + 1]
         y_cv = y.ix[test_index + 1]
-
-        assert_not_null(df_cv)
 
         model.fit(df_train, y_train)
 
