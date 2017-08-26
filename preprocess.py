@@ -49,9 +49,9 @@ def prep_data(df, col_y, manual_transformations, verbose=False):
     df = auto_transform(df, verbose)
     df[col_y] = y
 
-    y_train = df[pd.isnull(df[col_y]) == False][col_y]
-    df_train = df[pd.isnull(df[col_y]) == False].drop(col_y, axis=1)
-    df_test = df[pd.isnull(df[col_y]) == True].drop(col_y, axis=1)
+    y_train = df[~pd.isnull(df[col_y])][col_y]
+    df_train = df[~pd.isnull(df[col_y])].drop(col_y, axis=1)
+    df_test = df[pd.isnull(df[col_y])].drop(col_y, axis=1)
 
     if verbose:
         print("\n ** Training df has {} columns and {} rows, test df has {} columns and {} rows"
