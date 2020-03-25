@@ -7,8 +7,6 @@ competition.
 
 I managed to get a top 5% score on August 16, 2017 with a score of .11459.
 
-The writeup is on [my blog](http://jvlanalytics.nl/blog/2017/08/26/kaggle-house-price-prediction.html). 
-
 The code was written (and has only been tested) on a Mac using Anaconda Python 3.6. See `requirements.txt` for the modules used and their versions.
 
 # Files in repo
